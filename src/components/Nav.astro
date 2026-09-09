@@ -1,0 +1,43 @@
+---
+import { nav, site } from '../data/site';
+import { url } from '../lib/url';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<header class="site-nav">
+  <div class="mx-auto flex h-14 max-w-[74rem] items-center gap-4 px-6 sm:gap-6 sm:px-8">
+    <a
+      href={url('/#profile')}
+      class="link-underline shrink-0 text-[0.9375rem] font-medium tracking-tight"
+      aria-current={path === '/' ? 'page' : undefined}
+    >
+      {site.name}
+    </a>
+
+    <nav
+      aria-label="Main"
+      class="ml-auto flex items-center gap-3 overflow-x-auto text-[0.8125rem] sm:gap-5 sm:text-[0.875rem]"
+    >
+      {
+        nav.map((item) => (
+          <a
+            href={url(item.href)}
+            class="link-underline shrink-0 text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a
+        href={site.github}
+        rel="me noopener"
+        class="link-underline hidden shrink-0 text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)] sm:inline"
+      >
+        GitHub
+      </a>
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>

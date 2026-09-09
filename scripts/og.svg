@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#18212B"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#0B6E75"/>
+
+  <text x="80" y="118" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="20" letter-spacing="3.4" fill="#8A99A8">JIANKUN (JAKE) ZHANG</text>
+
+  <text x="80" y="238" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="62" font-weight="600" letter-spacing="-2" fill="#FFFFFF">I work on the systems layer</text>
+  <text x="80" y="312" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="62" font-weight="600" letter-spacing="-2" fill="#FFFFFF">of machine learning research.</text>
+
+  <text x="80" y="382" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="26" fill="#A9B7C4">GPU simulation infrastructure &#183; distributed training &#183; research tooling</text>
+
+  <line x1="80" y1="452" x2="1120" y2="452" stroke="#37485A" stroke-width="1"/>
+
+  <text x="80" y="514" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="40" fill="#FFFFFF">~100&#215;</text>
+  <text x="80" y="548" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="19" fill="#8A99A8">sim throughput</text>
+
+  <text x="340" y="514" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="40" fill="#FFFFFF">32,768</text>
+  <text x="340" y="548" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="19" fill="#8A99A8">parallel envs</text>
+
+  <text x="620" y="514" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="40" fill="#FFFFFF">ACL 2026</text>
+  <text x="620" y="548" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="19" fill="#8A99A8">co-author</text>
+
+  <text x="920" y="514" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="40" fill="#4FBFC4">UChicago</text>
+  <text x="920" y="548" font-family="Helvetica Neue, Helvetica, DejaVu Sans, sans-serif" font-size="19" fill="#8A99A8">CS + Econ, 2028</text>
+</svg>

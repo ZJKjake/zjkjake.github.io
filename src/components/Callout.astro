@@ -1,0 +1,21 @@
+---
+interface Props {
+  label: string;
+  /** `note` for context, `caveat` for honesty-preserving limitations. */
+  tone?: 'note' | 'caveat';
+}
+
+const { label, tone = 'note' } = Astro.props;
+---
+
+<aside
+  class:list={[
+    'my-10 border-l-2 pl-5 py-1',
+    tone === 'caveat' ? 'border-[var(--line-strong)]' : 'border-[var(--fg-accent)]',
+  ]}
+>
+  <p class="eyebrow mb-2.5">{label}</p>
+  <div class="space-y-3 text-[0.9375rem] leading-relaxed text-[var(--fg-muted)] [&_a]:text-[var(--fg-accent)] [&_a]:underline [&_a]:underline-offset-2 [&_strong]:font-semibold [&_strong]:text-[var(--fg)]">
+    <slot />
+  </div>
+</aside>

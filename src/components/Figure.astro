@@ -1,0 +1,23 @@
+---
+interface Props {
+  caption?: string;
+  /** Provenance line, e.g. which log or report the artifact came from. */
+  source?: string;
+}
+
+const { caption, source } = Astro.props;
+---
+
+<figure class="my-10 not-prose">
+  <div class="border border-[var(--line)] bg-[var(--bg-raised)]">
+    <slot />
+  </div>
+  {
+    (caption || source) && (
+      <figcaption class="mt-3 space-y-1">
+        {caption && <p class="text-[0.8125rem] leading-snug text-[var(--fg-muted)]">{caption}</p>}
+        {source && <p class="eyebrow">{source}</p>}
+      </figcaption>
+    )
+  }
+</figure>

@@ -1,0 +1,463 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Jake's palette, carried over from scripts/generate_research_summary.py */
+  --color-ink: #18212b;
+  --color-muted: #536273;
+  --color-accent: #0b6e75;
+  --color-rule: #cbd3da;
+  --color-paper: #ffffff;
+  --color-wash: #f6f7f8;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-display: 3.75rem;
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.035em;
+}
+
+/*
+  Semantic tokens. Every surface/text colour in the app goes through one of
+  these so dark mode is a single block of overrides rather than a `dark:`
+  variant on every element.
+*/
+:root {
+  color-scheme: light;
+  --bg: var(--color-paper);
+  --bg-raised: var(--color-wash);
+  --fg: var(--color-ink);
+  --fg-muted: var(--color-muted);
+  --fg-accent: var(--color-accent);
+  --line: var(--color-rule);
+  --line-strong: #a9b4be;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #10161d;
+  --bg-raised: #161e27;
+  --fg: #e8edf2;
+  --fg-muted: #9aa8b6;
+  --fg-accent: #4fbfc4;
+  --line: #263341;
+  --line-strong: #37485a;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Keep in-page section headings clear of the persistent navigation bar. */
+  section[id] {
+    scroll-margin-top: 6rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv05' 1, 'ss03' 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--fg-accent);
+    color: var(--bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--fg-accent);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+    font-weight: 560;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Numerals are the visual interest on this site: tabular, mono, roomy. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'zero' 1;
+    letter-spacing: -0.03em;
+  }
+
+  /* Small mono uppercase labels used for eyebrows and metric captions. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+}
+
+@layer components {
+  /* A floating, translucent shell gives the section nav its own visual layer. */
+  .site-nav {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 40;
+    width: min(calc(100% - 1.5rem), 74rem);
+    margin-inline: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background-color: color-mix(in srgb, var(--bg) 88%, transparent);
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--fg) 10%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  /* The first viewport gets the same editorial hero-to-board composition as
+     the reference while remaining rooted in Jake's own palette. */
+  .profile-hero {
+    position: relative;
+    overflow: clip;
+    background:
+      radial-gradient(circle at 88% 18%, color-mix(in srgb, var(--fg-accent) 10%, transparent), transparent 22rem),
+      radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--fg-accent) 6%, transparent), transparent 24rem);
+  }
+
+  .profile-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--line) 58%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--line) 46%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 92%);
+  }
+
+  .profile-hero-grid,
+  .scroll-cue {
+    position: relative;
+    z-index: 1;
+  }
+
+  .signal-lab {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(1rem, 2vw, 1.35rem);
+    border: 1px solid var(--line-strong);
+    border-radius: 0.5rem;
+    background: linear-gradient(145deg, var(--bg), var(--bg-raised));
+    box-shadow: 0 24px 60px color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+
+  .signal-lab::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 3px;
+    background: var(--fg-accent);
+  }
+
+  .signal-rank-card {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.75rem;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--line);
+    background-color: color-mix(in srgb, var(--bg) 72%, transparent);
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .signal-rank-card:hover {
+    border-color: var(--fg-accent);
+    background-color: color-mix(in srgb, var(--bg-raised) 78%, var(--fg-accent));
+    transform: translateX(3px);
+  }
+
+  .scroll-cue {
+    transition: color 0.18s ease;
+  }
+
+  .scroll-cue:hover {
+    color: var(--fg);
+  }
+
+  .section-rail {
+    position: fixed;
+    top: 50%;
+    right: 1.25rem;
+    z-index: 30;
+    flex-direction: column;
+    gap: 0.65rem;
+    transform: translateY(-50%);
+  }
+
+  .section-rail a {
+    position: relative;
+    width: 0.625rem;
+    height: 0.625rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .section-rail a::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 50%;
+    right: 1.15rem;
+    padding: 0.3rem 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: 0.25rem;
+    color: var(--fg);
+    background: var(--bg);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 10%, transparent);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity 0.18s ease;
+  }
+
+  .section-rail a:hover,
+  .section-rail a:focus-visible {
+    border-color: var(--fg-accent);
+    background: var(--fg-accent);
+    transform: scale(1.22);
+  }
+
+  .section-rail a:hover::after,
+  .section-rail a:focus-visible::after {
+    opacity: 1;
+  }
+
+  .case-frame {
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    border: 1px solid var(--line);
+    background: linear-gradient(135deg, var(--bg-raised), var(--bg));
+  }
+
+  .lift-card,
+  .impact-card {
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  @media (hover: hover) {
+    .lift-card:hover,
+    .impact-card:hover {
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 18px 36px color-mix(in srgb, var(--fg) 11%, transparent);
+      transform: translateY(-3px);
+    }
+  }
+
+  /* Long-form body copy inside case studies. */
+  .prose-doc {
+    max-width: 68ch;
+  }
+
+  .prose-doc > * + * {
+    margin-top: 1.35em;
+  }
+
+  .prose-doc p,
+  .prose-doc li {
+    font-size: 1.0625rem;
+    line-height: 1.72;
+    color: var(--fg);
+  }
+
+  .prose-doc h2 {
+    margin-top: 3.5rem;
+    font-size: 1.5rem;
+    line-height: 1.25;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    /* Clears the sticky header when jumped to from the table of contents. */
+    scroll-margin-top: 4.5rem;
+  }
+
+  .prose-doc h3 {
+    margin-top: 2.5rem;
+    font-size: 1.125rem;
+    line-height: 1.35;
+    scroll-margin-top: 4.5rem;
+  }
+
+  .prose-doc a:not(.unstyled) {
+    color: var(--fg-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: opacity 0.15s;
+  }
+
+  .prose-doc a:not(.unstyled):hover {
+    opacity: 0.7;
+  }
+
+  .prose-doc strong {
+    font-weight: 600;
+  }
+
+  .prose-doc code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background-color: var(--bg-raised);
+    border: 1px solid var(--line);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  .prose-doc pre {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+    background-color: var(--bg-raised);
+    border: 1px solid var(--line);
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+  }
+
+  .prose-doc pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .prose-doc ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .prose-doc ul > li {
+    position: relative;
+    padding-left: 1.25rem;
+  }
+
+  .prose-doc ul > li + li {
+    margin-top: 0.5rem;
+  }
+
+  .prose-doc ul > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75em;
+    width: 0.5rem;
+    height: 1px;
+    background-color: var(--line-strong);
+  }
+
+  .prose-doc ol {
+    list-style: decimal;
+    padding-left: 1.4rem;
+  }
+
+  .prose-doc ol > li + li {
+    margin-top: 0.5rem;
+  }
+
+  .prose-doc blockquote {
+    border-left: 2px solid var(--fg-accent);
+    padding-left: 1.15rem;
+    color: var(--fg-muted);
+    font-style: normal;
+  }
+
+  .prose-doc table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .prose-doc th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    font-weight: 400;
+    padding: 0 0.75rem 0.6rem 0;
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .prose-doc td {
+    padding: 0.7rem 0.75rem 0.7rem 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  .prose-doc hr {
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  /* Underline that draws itself on hover — used for nav and inline links. */
+  .link-underline {
+    position: relative;
+  }
+
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background-color: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .link-underline:hover::after,
+  .link-underline[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+}

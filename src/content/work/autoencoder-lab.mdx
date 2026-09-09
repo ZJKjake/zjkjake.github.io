@@ -1,0 +1,139 @@
+---
+title: 'Teaching bottlenecks by removing the training loop'
+shortTitle: 'Autoencoder Lab'
+org: 'Personal project · deployed on GitHub Pages'
+role: 'Sole author'
+period: '2026'
+kind: 'product'
+order: 5
+featured: false
+summary: 'An interactive explainer for AE, VAE, VQ-VAE, and FSQ bottlenecks. The central design decision was to use an exactly invertible transform instead of a trained network, so that what you see is the bottleneck and nothing else.'
+lede: 'Every explanation of variational and quantised autoencoders I could find showed you a trained model and asked you to trust that the bottleneck was responsible for what you were seeing. I wanted the opposite: a setup where the encoder and decoder are provably lossless, so any degradation on screen is attributable to the bottleneck alone.'
+stack: ['React 19', 'TypeScript', 'Vite', 'Vitest', 'Canvas 2D', 'GitHub Actions']
+metrics:
+  - value: '4'
+    label: 'Bottleneck strategies, same input, side by side'
+    note: 'Continuous, VAE, VQ-VAE, FSQ'
+  - value: '28'
+    label: 'Unit tests, mostly numerical'
+    note: 'Gate deployment in CI'
+  - value: '784'
+    label: 'Coefficients in the invertible transform'
+    note: '28 × 28, zigzag-ordered by frequency'
+  - value: '0'
+    label: 'Network requests after load'
+    note: 'All computation is local; nothing is sent anywhere'
+links:
+  - label: 'Open the live site'
+    href: 'https://zjkjake.github.io/autoencoder-lab/'
+  - label: 'Source on GitHub'
+    href: 'https://github.com/ZJKjake/autoencoder-lab'
+---
+
+import Callout from '../../components/Callout.astro';
+import Figure from '../../components/Figure.astro';
+
+<Figure caption="The landing page, with its animated compression visual. The line under the buttons reads 'Educational fixed-math simulation. No neural network is trained here.' — the disclaimer is load-bearing, not fine print." source="Captured from the live site">
+  <img
+    src="/media/shots/autoencoder-lab-hero.jpg"
+    width="1440"
+    height="1000"
+    alt="Autoencoder Lab landing page: the heading 'Autoencoders Made Visible' above a wide visualisation of many input pixels converging through a narrow bottleneck of eight latent values and fanning back out into a reconstruction."
+    class="block w-full"
+    loading="lazy"
+    decoding="async"
+  />
+</Figure>
+
+## The design decision this project is really about
+
+The intuitive way to build this is to train a small autoencoder in the browser and let people
+poke at it. I decided not to, and I think that call is the most defensible piece of engineering
+in the project.
+
+If you train a network, then every artifact the user sees has at least four possible causes:
+the bottleneck, the optimiser, the amount of training it got, and the initialisation. When a
+VQ-VAE reconstruction comes out blurry, a learner cannot tell whether that is what vector
+quantisation does or whether the model simply needed more epochs. The confound is fatal for
+teaching, and it is not fixable by training longer, because the learner still has to take your
+word for which cause is which.
+
+So the encoder and decoder are a **two-dimensional discrete cosine transform** — an exact,
+orthonormal, invertible linear map. With the full 784 coefficients, the round trip is lossless
+to floating-point error — the test suite asserts the reconstruction error stays below `1e-10`,
+which is the one property the whole tool rests on. Because the
+transform cannot lose information, every difference between the input and the reconstruction is
+caused by something done to the latent vector in between. The bottleneck is the only variable.
+
+<Callout label="What this is not" tone="caveat">
+  **This does not train or run a neural network.** It is a deterministic teaching codec that
+  applies the real mathematical operations each bottleneck performs — coefficient truncation,
+  stochastic sampling, nearest-neighbour vector quantisation, scalar quantisation — to a latent
+  vector produced by a fixed transform rather than a learned encoder. The interface says so
+  explicitly, in the app and in the README, because a learner who leaves thinking they watched a
+  VAE train has been misled. The mechanisms are real; the encoder is a stand-in.
+</Callout>
+
+## The four bottlenecks
+
+All four modes take the same latent vector from the same transform and differ only in what they
+do to it, which is exactly the comparison the tool exists to make.
+
+**Continuous.** Keep the first *k* coefficients and discard the rest. The ordering is a zigzag
+traversal of the frequency plane, which is the detail that makes the demo legible: coefficients
+come out roughly in order of perceptual importance, so cutting the latent from 64 to 8 removes
+fine detail before it removes the shape. The slider runs from 4 to 784 with presets at 4, 16,
+64, 196, 392, and 784; at 16 dimensions you are looking at a **49× compression ratio** and a
+digit that is still clearly the digit you drew. Watching it survive that and then fall apart a
+few steps later is the whole lesson about dimensionality.
+
+**VAE.** Instead of passing the latent through, produce a mean and a per-dimension standard
+deviation and sample from them. The sampler is seeded, so the same seed gives the same sample
+and you can step through the stochasticity deliberately instead of watching it flicker. The
+deviation grows with coefficient index, mirroring the real behaviour where the model is more
+confident about coarse structure than fine detail.
+
+**VQ-VAE.** Take coefficients in pairs, find the nearest entry in a 2D codebook, and substitute
+it. The codebook is laid out on a golden-angle spiral — radius grows as the square root of the
+index, angle advances by \(\pi(3-\sqrt5)\) — which distributes entries evenly over the disc
+without clustering, so codebook size behaves like a clean dial. The UI shows which code each
+pair snapped to, which is the thing that makes quantisation click: you can see the codebook
+being the bottleneck.
+
+**FSQ.** Quantise each coefficient independently to *L* evenly spaced levels. Putting it beside
+VQ on the same input is the point. FSQ has no codebook to learn and no collapse to manage, and
+seeing the two produce comparable damage is a better argument for FSQ than any prose I could
+write.
+
+## Engineering notes
+
+The transform is separable, so a naive 784×784 matrix multiply is unnecessary: it runs as rows
+then columns against a precomputed 1D basis, which is what keeps it fast enough to recompute on
+every stroke of the drawing canvas. Latent scaling is a single shared constant applied on
+encode and removed on decode, so the quantisers always see values in a predictable range —
+without that, the fixed codebook and the fixed quantisation levels would be calibrated to
+nothing.
+
+The output panels are chosen to make the invisible visible: a per-pixel absolute difference map,
+the average pixel difference, the percentage of pixels that moved by more than a threshold, and
+a visualisation of the individual frequency basis images so you can see what each latent
+dimension physically contributes. There is also an accumulation view that adds coefficients back
+one at a time.
+
+Around the sandbox there is a six-chapter guided lesson that asks the learner to predict before
+revealing, and the landing page has an animated compression visual with a static presentation
+served when `prefers-reduced-motion` is set.
+
+## Testing and deployment
+
+28 tests, and their distribution reflects where correctness actually lives: 17 on the
+simulation module, 7 on the hero animation, 4 on lesson content. The simulation tests are the
+ones that matter — an explainer whose maths is subtly wrong is worse than no explainer, because
+it teaches confident misconceptions. The invertibility property is the natural thing to assert
+against, and it is a strong assertion: if DCT-then-inverse-DCT does not reproduce the input,
+every downstream conclusion the tool draws is invalid.
+
+CI runs the tests before the build and deploys to GitHub Pages only if both pass, so a
+numerical regression cannot reach the live site. The app has no runtime dependencies beyond
+React — no plotting library, no tensor library — and every drawing and lesson interaction stays
+in the browser.

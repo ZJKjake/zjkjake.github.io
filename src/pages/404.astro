@@ -1,0 +1,22 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
+---
+
+<Base title="Not found" description="That page does not exist.">
+  <div class="mx-auto max-w-[74rem] px-6 py-32 sm:px-8">
+    <p class="num text-[0.8125rem] text-[var(--fg-muted)]">404</p>
+    <h1 class="mt-6 text-[2.25rem] leading-[1.1] tracking-[-0.03em]">This page does not exist.</h1>
+    <p class="mt-6 max-w-[46ch] text-[1.0625rem] leading-relaxed text-[var(--fg-muted)]">
+      The link may be out of date. The work index has everything.
+    </p>
+    <div class="mt-10 flex flex-wrap gap-x-8 gap-y-3">
+      <a href={url('/work')} class="link-underline text-[0.9375rem] text-[var(--fg-accent)]">
+        View work
+      </a>
+      <a href={url('/')} class="link-underline text-[0.9375rem] text-[var(--fg-accent)]">
+        Home
+      </a>
+    </div>
+  </div>
+</Base>

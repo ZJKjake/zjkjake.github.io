@@ -1,0 +1,36 @@
+---
+interface Metric {
+  value: string;
+  label: string;
+  note?: string;
+}
+
+interface Props {
+  metrics: readonly Metric[];
+  /** Columns at the widest breakpoint. */
+  columns?: 2 | 3 | 4;
+  class?: string;
+}
+
+const { metrics, columns = 4, class: className = '' } = Astro.props;
+
+const columnClass = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-4',
+}[columns];
+---
+
+<dl class:list={['grid grid-cols-1 gap-px bg-[var(--line)]', columnClass, className]}>
+  {
+    metrics.map((m) => (
+      <div class="bg-[var(--bg)] px-5 py-6">
+        <dd class="num text-[1.75rem] leading-none text-[var(--fg)]">{m.value}</dd>
+        <dt class="mt-3 text-[0.8125rem] leading-snug text-[var(--fg)]">{m.label}</dt>
+        {m.note && (
+          <p class="mt-2 text-[0.75rem] leading-snug text-[var(--fg-muted)]">{m.note}</p>
+        )}
+      </div>
+    ))
+  }
+</dl>

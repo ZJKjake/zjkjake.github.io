@@ -1,0 +1,106 @@
+---
+title: 'Benchmark infrastructure for humanoid skill priors'
+shortTitle: 'MIT CSAIL — RSP benchmarks'
+org: 'MIT CSAIL'
+role: 'Research Assistant'
+location: 'Cambridge, MA'
+period: 'Jun 2026 – Present'
+kind: 'research'
+order: 2
+featured: true
+summary: 'Building the evaluation harness for Robot Skill Puzzles — the checkpointing, multi-seed aggregation, parameter-matching, and GPU accounting that decide whether a humanoid RL comparison means anything.'
+lede: 'Robot Skill Puzzles is a decentralised skill-prior framework for humanoid control. My work is the layer underneath it: the benchmark and evaluation infrastructure that has to exist before any claim the project makes about one method beating another can be trusted. Mentored by Zhiyang (Frank) Dou.'
+stack: ['Python', 'Bash', 'NVIDIA Isaac Lab', 'PyTorch', 'InterMimic', 'SONIC']
+metrics:
+  - value: '256 → 1,024'
+    label: 'Parallel environments, after scaling the harness'
+    note: 'Same benchmark, 4× the environments'
+  - value: 'Multi-seed'
+    label: 'Aggregation, rather than single-run reporting'
+  - value: 'Parameter-matched'
+    label: 'Comparisons, enforced by the harness'
+links:
+  - label: 'InterMimic'
+    href: 'https://github.com/Sirui-Xu/InterMimic'
+  - label: 'NVIDIA Isaac Lab'
+    href: 'https://isaac-sim.github.io/IsaacLab/'
+---
+
+import Callout from '../../components/Callout.astro';
+import ScalingLadder from '../../components/islands/ScalingLadder.tsx';
+
+<Callout label="Scope of this page" tone="caveat">
+  Robot Skill Puzzles is unpublished research. This page describes only the infrastructure I
+  built and the engineering problems it addresses — the same three bullets that are on my
+  résumé. It deliberately does not describe RSP's methods, architecture, or results, and no
+  performance numbers from the project appear here.
+</Callout>
+
+## Why the infrastructure is the hard part
+
+Humanoid reinforcement learning has a measurement problem that is easy to underestimate until
+you have been burned by it. Runs are long, expensive, and high-variance. Two training runs of
+the *same* configuration with different random seeds can land far enough apart that the gap
+between them exceeds the gap you are trying to attribute to a method change. If you compare a
+single run of method A against a single run of method B, the honest interpretation of the
+result is usually "no information."
+
+Layer on top of that: the two candidate methods rarely have the same parameter count unless
+someone deliberately makes them, GPU jobs die partway through, and the environments themselves
+— InterMimic and SONIC inside NVIDIA Isaac Lab — each have their own configuration surface and
+their own assumptions about reference motion data. Every one of those is an opportunity to
+produce a number that looks like a result and is not one.
+
+Benchmark infrastructure is the thing that closes those holes. It is not glamorous and it is
+the difference between a project that can make claims and one that cannot.
+
+## What I built
+
+**Checkpointing and evaluation.** Long humanoid runs fail. The infrastructure has to make a
+failure at hour six recoverable rather than fatal, and it has to keep evaluation separable from
+training so a policy can be re-evaluated later, under a different protocol, without retraining
+it. That separation is what makes it possible to change your mind about how to measure
+something after the fact.
+
+**Multi-seed aggregation.** Running several seeds per configuration and aggregating them, so
+what gets reported is a distribution rather than whichever run happened to finish first. This
+is the single highest-leverage piece. It is also the one that costs the most compute, which is
+why it is the first thing dropped under deadline pressure and the reason it needs to be
+automatic rather than a decision someone makes per experiment.
+
+**Parameter matching.** Enforcing that architectures under comparison are matched in capacity
+before their scores are put side by side. Without it, "method A beats method B" can quietly
+mean "A had more parameters than B." I had already learned this one the hard way during
+[an earlier internship](/work/agile-robots), where several of my own architecture comparisons
+were not parameter-matched and I had to caveat them rather than trust them. Building the check
+into the harness means nobody has to remember to do it.
+
+**Reference-motion validation.** Motion-imitation environments consume reference motion data,
+and malformed or misaligned references produce training runs that fail in ways that look like
+algorithmic failure. Validating references up front converts a confusing multi-hour failure
+into an immediate, legible error.
+
+**GPU resource management and cost accounting.** Scheduling across available GPUs, plus
+automated analysis of performance, memory, and cost per run. The cost part matters more than it
+sounds: knowing what a sweep will cost before launching it is what makes it possible to choose
+between "more seeds" and "more configurations" on evidence instead of vibes.
+
+## Scaling
+
+I scaled the harness from 256 to 1,024 parallel environments — a fourfold increase in
+throughput per wall-clock hour, which converts directly into either more seeds or more
+configurations at the same cost. The requirement was that reproducibility survive the change:
+scaling the environment count must not silently alter batch composition or evaluation
+semantics, or every comparison against previously collected results is invalidated.
+
+<ScalingLadder client:visible />
+
+## What I take from it
+
+The pattern I keep running into is that the reliability of a research result is set by
+infrastructure decisions made before any of the interesting work starts. Whether comparisons
+are parameter-matched, whether multiple seeds are the default or an afterthought, whether
+evaluation can be re-run independently of training — those are all decided by the harness, and
+by the time someone is looking at a plot it is too late to change the answer.
+
+That is the part of machine learning I want to keep working on.

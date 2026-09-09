@@ -1,0 +1,45 @@
+---
+// Two 14px glyphs, one shown per theme. No JS framework needed.
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  class="grid h-7 w-7 place-items-center text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+  aria-label="Switch colour theme"
+>
+  <svg
+    class="h-[15px] w-[15px] [:root[data-theme='dark']_&]:hidden"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="8" r="3.25"></circle>
+    <path d="M8 1v1.75M8 13.25V15M1 8h1.75M13.25 8H15M3.05 3.05l1.24 1.24M11.71 11.71l1.24 1.24M12.95 3.05l-1.24 1.24M4.29 11.71l-1.24 1.24"></path>
+  </svg>
+  <svg
+    class="hidden h-[15px] w-[15px] [:root[data-theme='dark']_&]:block"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.25"
+    aria-hidden="true"
+  >
+    <path d="M13.5 10.2A5.8 5.8 0 0 1 5.8 2.5a5.8 5.8 0 1 0 7.7 7.7Z"></path>
+  </svg>
+</button>
+
+<script>
+  const root = document.documentElement;
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      /* ignore — the toggle still works for this page view */
+    }
+  });
+</script>

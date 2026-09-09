@@ -1,0 +1,50 @@
+---
+import { site } from '../data/site';
+import { url } from '../lib/url';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-28 border-t border-[var(--line)]">
+  <div
+    class="mx-auto flex max-w-[74rem] flex-col gap-5 px-6 py-10 sm:flex-row sm:items-baseline sm:justify-between sm:px-8"
+  >
+    <div>
+      <p class="text-sm text-[var(--fg-muted)]">
+        {site.fullName} · {site.role}
+      </p>
+    </div>
+
+    <nav aria-label="Elsewhere" class="flex flex-wrap items-baseline gap-x-5 gap-y-2 text-sm">
+      <a
+        href="tel:+15173165171"
+        class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+      >
+        {site.phone}
+      </a>
+      <a
+        href={`mailto:${site.email}`}
+        class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+      >
+        {site.email}
+      </a>
+      <a
+        href={site.github}
+        rel="me noopener"
+        class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+      >
+        GitHub
+      </a>
+      <a
+        href={url(site.resume)}
+        class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]"
+      >
+        Resume
+      </a>
+    </nav>
+  </div>
+
+  <div class="mx-auto max-w-[74rem] px-6 pb-8 sm:px-8">
+    <p class="eyebrow">© {year} Jiankun (Jake) Zhang</p>
+  </div>
+</footer>

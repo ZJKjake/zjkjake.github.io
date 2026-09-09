@@ -1,0 +1,546 @@
+---
+import Base from '../layouts/Base.astro';
+import { site } from '../data/site';
+import { url } from '../lib/url';
+
+const signalBoard = [
+  { label: 'Agile Robots', detail: '~275 → 25,000+ steps/s through GPU tensor batching (>100×).', href: '#industry' },
+  { label: 'Distributed PPO', detail: '196K-sample effective batch across two GPUs.', href: '#industry' },
+  { label: 'MIT CSAIL', detail: 'Humanoid-RL benchmark infrastructure for RSP, InterMimic, and SONIC.', href: '#research' },
+  { label: 'RespiraMFM', detail: 'ACL 2026 co-author; +20.98% zero-shot AUROC over existing baselines.', href: '#research' },
+  { label: 'AgentMeter', detail: 'A VS Code/Cursor extension with 1,400+ Open VSX downloads.', href: '#projects' },
+];
+
+const industryMetrics = [
+  {
+    value: '>100×',
+    label: 'Simulation-throughput gain',
+    note: '~275 → 25,000+ steps/s through batched GPU tensor operations',
+  },
+  {
+    value: '196K',
+    label: 'Effective PPO batch',
+    note: 'Gradient accumulation and cross-rank synchronization across two GPUs',
+  },
+  {
+    value: '32,768',
+    label: 'Parallel environments',
+    note: 'Largest Unitree G1 run launched across four GPUs',
+  },
+];
+
+const impactCards = [
+  {
+    area: 'Industry',
+    value: '>100×',
+    title: 'Simulation throughput',
+    detail: '~275 → 25,000+ steps/s after replacing per-environment queries with GPU tensor operations.',
+  },
+  {
+    area: 'Research',
+    value: '1,024',
+    title: 'Parallel environments',
+    detail: 'Scaled MIT CSAIL humanoid-RL benchmark training from 256 to 1,024 environments.',
+  },
+  {
+    area: 'Systems',
+    value: '196K',
+    title: 'PPO batch',
+    detail: 'Effective batch supported across two GPUs with gradient accumulation.',
+  },
+  {
+    area: 'Scale',
+    value: '32,768',
+    title: 'Parallel environments',
+    detail: 'Largest Unitree G1 configuration launched across four GPUs.',
+  },
+  {
+    area: 'Research',
+    value: '+20.98%',
+    title: 'Zero-shot AUROC',
+    detail: 'RespiraMFM improvement over existing baselines at ACL 2026.',
+  },
+  {
+    area: 'Product',
+    value: '1,400+',
+    title: 'Open VSX downloads',
+    detail: 'Downloads for the AgentMeter VS Code/Cursor extension.',
+  },
+];
+
+const skillGroups = [
+  { label: 'Languages', items: ['Python', 'Java', 'C', 'TypeScript', 'JavaScript', 'HTML/CSS'] },
+  {
+    label: 'Software & Systems',
+    items: ['Linux/Unix', 'Bash', 'Git', 'GitHub', 'PyTorch', 'GitHub Actions', 'React', 'Vite', 'Vitest'],
+  },
+  {
+    label: 'ML/AI',
+    items: [
+      'Reinforcement Learning (PPO)',
+      'LLM Agents',
+      'Multimodal Learning',
+      'Contrastive Learning',
+      'TensorFlow',
+      'NumPy',
+    ],
+  },
+  {
+    label: 'Robotics & Simulation',
+    items: ['NVIDIA Isaac Lab', 'Isaac Sim', 'PhysX', 'NVIDIA SONIC', 'Unitree G1', 'SMPL-X', 'OMOMO', 'GMR'],
+  },
+];
+
+const coursework = [
+  'Machine Learning',
+  'Algorithms',
+  'Data Structures',
+  'System Programming',
+  'Computer Graphics',
+  'Discrete Math',
+  'Macroecon',
+  'Statistics',
+];
+---
+
+<Base title={site.name + ' — systems under ML research'} description={site.description} bareTitle>
+  <aside class="section-rail hidden 2xl:flex" aria-label="Section shortcuts">
+    <a href="#profile" data-label="Profile" aria-label="Profile"></a>
+    <a href="#industry" data-label="Industry" aria-label="Industry"></a>
+    <a href="#research" data-label="Research" aria-label="Research"></a>
+    <a href="#projects" data-label="Projects" aria-label="Projects"></a>
+    <a href="#impact" data-label="Impact" aria-label="Impact"></a>
+    <a href="#skills" data-label="Skills" aria-label="Skills"></a>
+    <a href="#contact" data-label="Contact" aria-label="Contact"></a>
+  </aside>
+
+  <section
+    id="profile"
+    class="profile-hero mx-auto max-w-[74rem] px-6 pt-14 pb-10 sm:px-8 sm:pt-20 lg:min-h-[calc(100svh-4rem)]"
+    aria-labelledby="profile-heading"
+  >
+    <div class="profile-hero-grid grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(23rem,0.9fr)] lg:items-center">
+      <div>
+        <p class="eyebrow text-[var(--fg-accent)]">CS + Economics @ UChicago · systems under ML research</p>
+
+        <h1
+          id="profile-heading"
+          class="mt-5 max-w-[15ch] text-[3.25rem] leading-[0.92] tracking-[-0.052em] sm:text-[5.25rem]"
+        >
+          Jiankun (Jake) Zhang
+        </h1>
+        <p class="mt-7 max-w-[34ch] text-[1.35rem] leading-snug tracking-[-0.02em] sm:text-[1.7rem]">
+          {site.tagline}
+        </p>
+
+        <p class="mt-6 max-w-[32ch] text-[0.9375rem] leading-relaxed text-[var(--fg-muted)]">
+          MIT CSAIL research assistant · Agile Robots humanoid RL intern · ACL 2026 co-author.
+        </p>
+
+        <nav aria-label="Profile links" class="mt-9 flex flex-wrap gap-x-7 gap-y-4 text-[0.9375rem]">
+          <a href={url(site.resume)} class="link-underline text-[var(--fg-accent)]">Resume</a>
+          <a href={site.github} rel="me noopener" class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]">
+            GitHub
+          </a>
+          <a href={'mailto:' + site.email} class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]">
+            {site.email}
+          </a>
+          <a href="tel:+15173165171" class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]">
+            {site.phone}
+          </a>
+        </nav>
+      </div>
+
+      <aside class="signal-lab" aria-labelledby="signal-board">
+        <div class="flex items-baseline justify-between gap-4">
+          <div>
+            <p id="signal-board" class="eyebrow text-[var(--fg-accent)]">Signal board</p>
+            <p class="mt-3 text-[0.9375rem] leading-snug">Work closest to the systems I want to keep building.</p>
+          </div>
+          <span class="num text-[0.75rem] text-[var(--fg-muted)]">05 signals</span>
+        </div>
+
+        <ol class="mt-7">
+        {
+          signalBoard.map((signal, index) => (
+            <li>
+              <a
+                href={signal.href}
+                class="signal-rank-card group"
+              >
+                <span class="num text-[0.75rem] text-[var(--fg-muted)]">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <span>
+                  <span class="block text-[0.9375rem] leading-snug">{signal.label}</span>
+                  <span class="mt-1 block text-[0.75rem] leading-relaxed text-[var(--fg-muted)] group-hover:text-[var(--fg-accent)]">
+                    {signal.detail}
+                  </span>
+                </span>
+                <span aria-hidden="true" class="text-[0.875rem] text-[var(--fg-muted)] transition-transform group-hover:translate-x-0.5">↗</span>
+              </a>
+            </li>
+          ))
+        }
+        </ol>
+      </aside>
+    </div>
+
+    <a href="#industry" class="scroll-cue mt-8 inline-flex items-center gap-3 text-[0.8125rem] text-[var(--fg-muted)]">
+      Scroll to industry <span aria-hidden="true" class="num text-[1rem] text-[var(--fg-accent)]">↓</span>
+    </a>
+  </section>
+
+  <section
+    id="industry"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="industry-heading"
+  >
+    <div class="grid gap-10 border-b border-[var(--line)] pb-10 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">01 / Industry</p></div>
+      <div>
+        <h2 id="industry-heading" class="max-w-[22ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Make the system beneath the policy move.
+        </h2>
+        <div class="case-frame mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div class="max-w-[60ch]">
+            <p class="eyebrow">Agile Robots · Humanoid Reinforcement Learning Intern · May–July 2026 · Munich, Germany</p>
+            <p class="mt-4 text-[1rem] leading-relaxed text-[var(--fg-muted)]">
+              Optimized a GPU-accelerated humanoid RL pipeline by replacing per-environment
+              Python/PhysX queries with batched GPU tensor operations, increasing simulation
+              throughput from ~275 to 25,000+ steps/s (&gt;100×).
+            </p>
+            <p class="mt-4 text-[1rem] leading-relaxed text-[var(--fg-muted)]">
+              Extended distributed PPO training in PyTorch across two GPUs with gradient
+              accumulation and cross-rank synchronization, supporting 196K-sample effective
+              batches and validated by 42 unit and regression tests.
+            </p>
+            <p class="mt-4 text-[1rem] leading-relaxed text-[var(--fg-muted)]">
+              Scaled Unitree G1 reinforcement learning to four GPUs and 32,768 parallel
+              simulation environments.
+            </p>
+          </div>
+
+          {
+            site.showCompanyMedia && (
+              <figure class="w-full max-w-md">
+                <div class="overflow-hidden border border-[var(--line)] bg-[var(--bg-raised)]">
+                  <video
+                    class="block w-full"
+                    src={url('/media/g1-recovery-mujoco.mp4')}
+                    width="960"
+                    height="720"
+                    controls
+                    loop
+                    muted
+                    playsinline
+                    preload="metadata"
+                    aria-label="A Unitree G1 humanoid robot recovering from a fall to a standing pose in MuJoCo."
+                  ></video>
+                </div>
+                <figcaption class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">
+                  A trained policy recovering from a fall to a standing pose in MuJoCo. 14 seconds, no cuts.
+                </figcaption>
+              </figure>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    <dl class="grid gap-px border-b border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+      {
+        industryMetrics.map((metric) => (
+          <div class="bg-[var(--bg)] px-5 py-6">
+            <dd class="num text-[1.75rem] leading-none">{metric.value}</dd>
+            <dt class="mt-3 text-[0.875rem] leading-snug">{metric.label}</dt>
+            <p class="mt-2 text-[0.75rem] leading-snug text-[var(--fg-muted)]">{metric.note}</p>
+          </div>
+        ))
+      }
+    </dl>
+
+  </section>
+
+  <section
+    id="research"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="research-heading"
+  >
+    <div class="grid gap-10 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">02 / Research</p></div>
+      <div>
+        <h2 id="research-heading" class="max-w-[23ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Research Experience
+        </h2>
+        <p class="mt-6 max-w-[60ch] text-[1rem] leading-relaxed text-[var(--fg-muted)]">
+          Reproducible humanoid-RL infrastructure, multimodal data pipelines, and LLM-agent
+          evaluation.
+        </p>
+
+        <div class="mt-10 grid gap-px border border-[var(--line)] bg-[var(--line)] lg:grid-cols-2">
+          <article class="lift-card bg-[var(--bg)] p-6 sm:p-8">
+            <p class="eyebrow">MIT CSAIL · Cambridge, MA</p>
+            <h3 class="mt-4 text-[1.375rem] leading-snug">Research Assistant</h3>
+            <p class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">
+              Mentored by Zhiyang (Frank) Dou · July 2026–Present
+            </p>
+            <p class="mt-4 text-[0.9375rem] leading-relaxed text-[var(--fg-muted)]">
+              Built benchmark infrastructure for Robot Skill Puzzles (RSP), a decentralized
+              skill-prior framework for humanoid control, integrating InterMimic and SONIC
+              environments in NVIDIA Isaac Lab and scaling training from 256 to 1,024 parallel
+              environments.
+            </p>
+            <p class="mt-4 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+              Developed Python/Bash infrastructure for checkpointing, evaluation, multi-seed
+              aggregation, GPU resource management, and automated performance, memory, and cost
+              analysis.
+            </p>
+            <p class="mt-4 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+              Implemented parameter matching, reference-motion validation, and reproducible
+              evaluation pipelines for humanoid RL experiments.
+            </p>
+            <div class="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-[0.8125rem]">
+              <a href="https://github.com/Sirui-Xu/InterMimic" rel="noopener" class="link-underline text-[var(--fg-accent)]">InterMimic</a>
+              <a href="https://isaac-sim.github.io/IsaacLab/" rel="noopener" class="link-underline text-[var(--fg-accent)]">NVIDIA Isaac Lab</a>
+            </div>
+          </article>
+
+          <article class="lift-card bg-[var(--bg)] p-6 sm:p-8">
+            <p class="eyebrow">Ohio State University · Columbus, OH</p>
+            <h3 class="mt-4 text-[1.375rem] leading-snug">Research Assistant</h3>
+            <p class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">
+              AIoT and Machine Learning Lab · Mar 2025–Present
+            </p>
+            <p class="mt-4 text-[0.9375rem] leading-relaxed text-[var(--fg-muted)]">
+              Co-authored RespiraMFM (ACL 2026); built data pipelines to extract, normalize, and
+              convert heterogeneous patient metadata across seven real-world respiratory datasets
+              into standardized natural-language inputs for multimodal LLM training, contributing
+              to +9.15% supervised and +20.98% zero-shot AUROC across nine disease-classification
+              tasks.
+            </p>
+            <p class="mt-4 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+              Constructed LLM-agent benchmark tasks for SkillEvolBench by generating and
+              systematically perturbing procedural workflows with information gaps, context shifts,
+              adversarial shortcuts, and failure conditions to evaluate skill transfer and composition.
+            </p>
+            <dl class="mt-6 grid grid-cols-2 gap-5 border-t border-[var(--line)] pt-5">
+              <div>
+                <dd class="num text-[1.45rem] leading-none">+9.15%</dd>
+                <dt class="mt-2 text-[0.75rem] leading-snug text-[var(--fg-muted)]">Supervised AUROC improvement</dt>
+              </div>
+              <div>
+                <dd class="num text-[1.45rem] leading-none">+20.98%</dd>
+                <dt class="mt-2 text-[0.75rem] leading-snug text-[var(--fg-muted)]">Zero-shot AUROC improvement</dt>
+              </div>
+            </dl>
+            <div class="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-[0.8125rem]">
+              <a href="https://arxiv.org/abs/2606.09966" rel="noopener" class="link-underline text-[var(--fg-accent)]">RespiraMFM</a>
+              <a href="https://arxiv.org/abs/2605.24117" rel="noopener" class="link-underline text-[var(--fg-accent)]">SkillEvolBench</a>
+            </div>
+          </article>
+        </div>
+
+        <div class="mt-6 border-t border-[var(--line)] pt-6">
+          <p class="eyebrow">Publications</p>
+          <div class="mt-4 grid gap-4 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+            <p>
+              <a href="https://arxiv.org/abs/2606.09966" rel="noopener" class="link-underline text-[var(--fg-accent)]">RespiraMFM: A Multimodal Foundation Model with Contrastive Audio-Language Alignment for Respiratory Disease Identification</a>
+              <span> · Co-author, ACL 2026 Main Conference</span>
+            </p>
+            <p>
+              <a href="https://arxiv.org/abs/2605.24117" rel="noopener" class="link-underline text-[var(--fg-accent)]">SkillEvolBench: Benchmarking the Evolution from Episodic Experience to Procedural Skills</a>
+              <span> · Co-author</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="projects"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="projects-heading"
+  >
+    <div class="grid gap-10 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">03 / Projects</p></div>
+      <div>
+        <h2 id="projects-heading" class="max-w-[22ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Tools that make opaque systems legible.
+        </h2>
+
+        <div class="mt-10 space-y-px border-y border-[var(--line)]">
+          <article class="lift-card grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_14rem] lg:items-start">
+            <div>
+              <p class="eyebrow">AgentMeter · Open VSX · GitHub</p>
+              <h3 class="mt-4 text-[1.5rem] leading-snug">AgentMeter</h3>
+              <p class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">
+                TypeScript/JavaScript · VS Code Extension API · GitHub Actions · CI/CD
+              </p>
+              <p class="mt-4 max-w-[58ch] text-[0.9375rem] leading-relaxed text-[var(--fg-muted)]">
+                Built and published a VS Code/Cursor extension for monitoring AI coding-tool
+                usage and quotas, reaching 1,400+ downloads on Open VSX.
+              </p>
+              <p class="mt-4 max-w-[58ch] text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+                Developed editor-integrated usage tracking and dashboard functionality and
+                automated extension releases through CI/CD.
+              </p>
+              <dl class="mt-6 flex flex-wrap gap-x-8 gap-y-5">
+                <div><dd class="num text-[1.5rem] leading-none">1,400+</dd><dt class="mt-2 text-[0.75rem] text-[var(--fg-muted)]">Open VSX downloads</dt></div>
+              </dl>
+              <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-[0.875rem]">
+                <a href="https://open-vsx.org/extension/zjkjake/agentmeter" rel="noopener" class="link-underline text-[var(--fg-accent)]">Open VSX</a>
+                <a href="https://github.com/ZJKjake/agent-meter" rel="noopener" class="link-underline text-[var(--fg-accent)]">GitHub</a>
+              </div>
+            </div>
+
+            <figure class="justify-self-start border border-[var(--line)] bg-[var(--bg-raised)]">
+              <img
+                src={url('/media/agentmeter-sidebar.png')}
+                width="391"
+                height="830"
+                loading="lazy"
+                decoding="async"
+                alt="The AgentMeter sidebar displaying provider-specific remaining-quota bars."
+                class="block w-full max-w-[14rem]"
+              />
+            </figure>
+          </article>
+
+          <article class="lift-card grid gap-8 border-t border-[var(--line)] py-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+            <div>
+              <p class="eyebrow">Autoencoder Lab · Website · GitHub</p>
+              <h3 class="mt-4 text-[1.5rem] leading-snug">Autoencoder Lab</h3>
+              <p class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">
+                React · TypeScript · Vite · Vitest · GitHub Actions
+              </p>
+              <p class="mt-4 max-w-[58ch] text-[0.9375rem] leading-relaxed text-[var(--fg-muted)]">
+                Built and deployed an interactive React/TypeScript web application for visualizing
+                AE, VAE, VQ-VAE, and FSQ architectures through latent-space and reconstruction
+                experiments.
+              </p>
+              <p class="mt-4 max-w-[58ch] text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+                Implemented interactive Canvas/SVG visualizations, automated testing with Vitest,
+                and CI/CD with GitHub Actions.
+              </p>
+              <div class="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-[0.875rem]">
+                <a href="https://zjkjake.github.io/autoencoder-lab/" rel="noopener" class="link-underline text-[var(--fg-accent)]">Website</a>
+                <a href="https://github.com/ZJKjake/autoencoder-lab" rel="noopener" class="link-underline text-[var(--fg-accent)]">GitHub</a>
+              </div>
+            </div>
+
+            <figure class="justify-self-start overflow-hidden border border-[var(--line)] bg-[var(--bg-raised)]">
+              <img
+                src={url('/media/shots/autoencoder-lab-hero.jpg')}
+                width="1440"
+                height="1000"
+                loading="lazy"
+                decoding="async"
+                alt="Autoencoder Lab visualizing a narrow latent bottleneck between input and reconstruction."
+                class="block w-full max-w-[20rem]"
+              />
+            </figure>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="impact"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="impact-heading"
+  >
+    <div class="grid gap-10 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">04 / Impact</p></div>
+      <div>
+        <h2 id="impact-heading" class="max-w-[20ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Signal, scale, outcomes.
+        </h2>
+        <dl class="mt-10 grid gap-px border border-[var(--line)] bg-[var(--line)] sm:grid-cols-2 xl:grid-cols-3">
+          {
+            impactCards.map((card) => (
+              <div class="impact-card min-h-52 bg-[var(--bg)] p-6">
+                <dt class="eyebrow">{card.area}</dt>
+                <dd class="num mt-8 text-[2rem] leading-none">{card.value}</dd>
+                <p class="mt-3 text-[0.9375rem] leading-snug">{card.title}</p>
+                <p class="mt-3 text-[0.8125rem] leading-relaxed text-[var(--fg-muted)]">{card.detail}</p>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="skills"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="skills-heading"
+  >
+    <div class="grid gap-10 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">05 / Skills</p></div>
+      <div>
+        <h2 id="skills-heading" class="max-w-[23ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Technical Skills
+        </h2>
+
+        <div class="mt-10 grid gap-px border border-[var(--line)] bg-[var(--line)] lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <dl class="grid gap-px bg-[var(--line)] sm:grid-cols-2">
+            {
+              skillGroups.map((group) => (
+                <div class="bg-[var(--bg)] p-6">
+                  <dt class="text-[0.9375rem]">{group.label}</dt>
+                  <dd class="mt-3 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">{group.items.join(' · ')}</dd>
+                </div>
+              ))
+            }
+          </dl>
+
+          <aside class="bg-[var(--bg)] p-6">
+            <p class="eyebrow">Education</p>
+            <p class="mt-4 text-[1.0625rem] leading-snug">University of Chicago · Chicago, IL</p>
+            <p class="mt-3 text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">
+              B.S. in Computer Science &amp; B.A. in Economics<br />
+              Expected Jun 2028
+            </p>
+            <p class="mt-5 border-t border-[var(--line)] pt-5 text-[0.875rem] text-[var(--fg-muted)]">
+              GPA: <span class="num text-[var(--fg)]">3.7</span>/<span class="num">4.0</span>
+            </p>
+          </aside>
+        </div>
+
+        <div class="mt-6">
+          <p class="eyebrow">Relevant coursework</p>
+          <p class="mt-3 max-w-[70ch] text-[0.875rem] leading-relaxed text-[var(--fg-muted)]">{coursework.join(' · ')}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section
+    id="contact"
+    class="mx-auto max-w-[74rem] px-6 pt-20 sm:px-8 sm:pt-28"
+    aria-labelledby="contact-heading"
+  >
+    <div class="grid gap-10 border-b border-[var(--line)] pb-16 lg:grid-cols-[12rem_minmax(0,1fr)]">
+      <div><p class="eyebrow">06 / Contact</p></div>
+      <div>
+        <h2 id="contact-heading" class="max-w-[18ch] text-[2rem] leading-[1.06] tracking-[-0.035em] sm:text-[2.7rem]">
+          Contact Info
+        </h2>
+        <nav aria-label="Contact links" class="mt-7 flex flex-wrap gap-x-7 gap-y-4 text-[0.9375rem]">
+          <a href="tel:+15173165171" class="link-underline text-[var(--fg-accent)]">{site.phone}</a>
+          <a href={'mailto:' + site.email} class="link-underline text-[var(--fg-accent)]">{site.email}</a>
+          <a href={site.github} rel="me noopener" class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]">
+            https://github.com/{site.githubHandle}
+          </a>
+          <a href={url(site.resume)} class="link-underline text-[var(--fg-muted)] transition-colors hover:text-[var(--fg)]">
+            Resume
+          </a>
+        </nav>
+      </div>
+    </div>
+  </section>
+</Base>

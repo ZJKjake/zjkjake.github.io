@@ -1,0 +1,136 @@
+---
+title: 'Making seven clinical datasets speak one language'
+shortTitle: 'RespiraMFM & SkillEvolBench'
+org: 'Ohio State University — AIoT and Machine Learning Lab'
+role: 'Research Assistant'
+location: 'Columbus, OH'
+period: 'Mar 2025 – Present'
+kind: 'research'
+order: 3
+featured: true
+summary: 'Built the metadata pipeline that let a multimodal foundation model read patient history as text alongside respiratory audio, across seven datasets that agreed on almost nothing.'
+lede: 'RespiraMFM aligns respiratory sounds with patient medical history using contrastive audio–language pretraining. The modelling was the interesting part of the paper; the reason it could be trained at all was that seven separately-collected clinical datasets had to be coerced into a single, consistent textual representation first. That was my piece of it.'
+stack: ['Python', 'PyTorch', 'Multimodal LLMs', 'Contrastive learning', 'Data pipelines']
+metrics:
+  - value: '+9.15%'
+    label: 'AUROC improvement, supervised fine-tuning'
+    note: 'Over existing baselines, reported in the paper'
+  - value: '+20.98%'
+    label: 'AUROC improvement, zero-shot'
+    note: 'Over existing baselines, reported in the paper'
+  - value: '7'
+    label: 'Real-world respiratory datasets normalised'
+    note: 'Spanning five major respiratory diseases'
+  - value: '2'
+    label: 'Papers co-authored'
+    note: 'Third author on both'
+links:
+  - label: 'RespiraMFM on arXiv'
+    href: 'https://arxiv.org/abs/2606.09966'
+  - label: 'SkillEvolBench on arXiv'
+    href: 'https://arxiv.org/abs/2605.24117'
+---
+
+import Callout from '../../components/Callout.astro';
+
+## The problem
+
+Audio-only models for respiratory disease detection hit a ceiling. A wheeze sounds like a
+wheeze whether the patient is a 70-year-old with diagnosed COPD or a 6-year-old with a
+seasonal infection, and the sound alone throws away the clinical context that a physician
+would use immediately. RespiraMFM's premise is that if you pair the audio with the patient's
+history and symptoms as text, and align the two modalities contrastively, the model learns
+representations that transfer much better — especially to diseases it was never fine-tuned on.
+
+That premise depends entirely on there being text to align against. There wasn't, at least
+not in usable form.
+
+## What I actually worked on
+
+Public respiratory audio datasets are collected by different groups, for different studies,
+over roughly two decades. They do not share a schema. The same clinical concept appears as a
+free-text note in one dataset, a coded categorical in another, and is simply absent from a
+third. Age might be an integer, a bucketed range, or a string like `"adult"`. Recording
+location on the chest is encoded with per-dataset abbreviations that collide across datasets
+— the same two-letter code means different anatomical sites depending on where it came from.
+
+My contribution was the pipeline that extracts, normalises, and converts that heterogeneous
+patient metadata across all seven datasets into standardised natural-language inputs suitable
+for multimodal training. Concretely that meant three things:
+
+**Extraction.** Getting the metadata out at all. It lives in per-dataset formats — spreadsheets,
+sidecar text files, filename conventions that encode subject and channel — and each needed its
+own reader.
+
+**Normalisation.** Mapping every dataset's vocabulary onto one shared set of fields, and being
+explicit about missingness rather than silently imputing. A field that is genuinely unknown
+has to stay unknown in the text, because the alternative is teaching the model that every
+patient from one cohort has the same fabricated attribute.
+
+**Verbalisation.** Turning normalised records into fluent natural-language descriptions the
+text encoder can use. This is the step that is easy to get subtly wrong. Templates that are
+too rigid make every record from a given dataset share long verbatim substrings, which hands
+the contrastive objective a shortcut: it can match audio to text by recognising the dataset's
+template rather than the clinical content. Getting the phrasing varied enough to avoid that,
+while staying faithful to the underlying values, was most of the work.
+
+<Callout label="What this is and is not">
+  I was the third of five authors on RespiraMFM and my contribution was the data and metadata
+  pipeline. The contrastive audio–language alignment strategy, the model architecture, and the
+  evaluation protocol were the work of my co-authors. The AUROC gains quoted above are the
+  paper's headline results for the full system, not an attribution of those gains to my
+  component alone.
+</Callout>
+
+## Result
+
+RespiraMFM was evaluated across five major respiratory diseases using all seven datasets, in
+both supervised fine-tuning and zero-shot settings. It improved AUROC by 9.15% on supervised
+tasks and 20.98% on zero-shot tasks over existing baselines. The paper was accepted to the
+**ACL 2026 Main Conference**.
+
+The size of the zero-shot gain relative to the supervised one is the part I find most
+interesting, and it is indirectly a statement about the text pipeline. Zero-shot transfer to
+an unseen disease can only work if the textual side generalises — if the model has learned
+something about the relationship between clinical language and sound, rather than memorising
+seven dataset-specific dialects.
+
+## SkillEvolBench: building tasks designed to break agents
+
+The second paper from this lab took me in a different direction. **SkillEvolBench** asks
+whether an LLM agent's accumulated episodic trajectories can actually be distilled into
+reusable procedural skills, or whether "skill libraries" are mostly an illusion. It contains
+180 tasks across six real-world agent environments, organised into role-conditioned families
+that share latent procedures. Agents learn on acquisition tasks, write to an external skill
+library, and are then evaluated on frozen deployment tasks.
+
+I constructed benchmark tasks by generating procedural workflows and then systematically
+perturbing them, along four axes designed to defeat shallow reuse:
+
+- **Information gaps** — a step the stored skill assumed would be available is missing.
+- **Context shifts** — the same underlying procedure, presented in a different surface context.
+- **Adversarial shortcuts** — a plausible-looking path that produces a wrong answer, to catch
+  agents pattern-matching instead of reasoning.
+- **Failure conditions** — states where the correct behaviour is to recognise the procedure
+  does not apply.
+
+The point of the perturbations is separation. A benchmark where the deployment tasks resemble
+the acquisition tasks cannot distinguish an agent that formed an abstraction from one that
+memorised a trace. The perturbation axes are what force that distinction to show up in the
+numbers.
+
+## What the benchmark found, including the uncomfortable part
+
+Across ten model configurations and three agent harnesses, the finding was largely negative:
+current agents adapt locally but rarely form robust, reusable skills. Gains from skill-based
+conditions were unstable under frozen deployment.
+
+The result I think is most worth stating plainly is that **raw-trajectory reuse frequently
+outperformed distilled skills.** Handing the agent the unprocessed episode beat handing it the
+tidy extracted "skill." The distillation step was discarding contextual and procedural detail
+that turned out to still be useful. Capacity analysis pointed the same way: writing more skills
+or maintaining larger resource libraries improved coverage while introducing episode-specific
+drift and procedural clutter.
+
+That is not the result anyone building a skill-library system hopes for, and it is the reason
+the benchmark is worth having.

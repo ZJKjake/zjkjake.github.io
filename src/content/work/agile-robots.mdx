@@ -1,0 +1,393 @@
+---
+title: 'One un-batched query was costing two orders of magnitude'
+shortTitle: 'Agile Robots — humanoid RL'
+org: 'Agile Robots'
+role: 'Humanoid Reinforcement Learning Intern'
+location: 'Munich, Germany'
+period: 'Jun 2026 – Aug 2026'
+kind: 'engineering'
+order: 1
+featured: true
+companyMedia: true
+summary: 'A summer on a GPU-accelerated humanoid RL pipeline: finding the observation term that was serialising a 4,096-environment simulation, then extending PPO across multiple GPUs and building the evaluation harness to check it still worked.'
+lede: 'Agile Robots trains Unitree G1 humanoid policies in GPU-parallel simulation. When I arrived, a locomotion configuration that should have been saturating the GPU was running at roughly 275 simulation steps per second. The hardware was not the problem. One observation term was being computed in a Python loop over environments, and every iteration of that loop made a separate physics-engine query.'
+stack:
+  ['Python', 'PyTorch', 'NVIDIA Isaac Lab', 'Isaac Sim', 'PhysX', 'MuJoCo', 'Distributed PPO', 'Unitree G1']
+metrics:
+  - value: '~275 → 25,155'
+    label: 'Simulation steps/s after batching one observation term'
+    note: '4,096-env single-GPU smoke test; second reading 28,712 at iteration 1'
+  - value: '73,637'
+    label: 'Sustained steps/s, 8,192 envs on 2 GPUs'
+    note: 'Measured at iteration 2,789'
+  - value: '196,608'
+    label: 'Effective global PPO batch, via 4-step gradient accumulation'
+    note: 'Across 2 GPUs with cross-rank synchronisation'
+  - value: '42'
+    label: 'Unit and regression tests written'
+    note: '16 PPO-extension + 8 matched-model + 18 distributed regression'
+links:
+  - label: 'Recovery training report (PDF)'
+    href: '/media/reports/recovery-amp-8192env-10k-final.pdf'
+    local: true
+  - label: 'MLP vs FSQ convergence report (PDF)'
+    href: '/media/reports/mlp-vs-fsq-convergence.pdf'
+    local: true
+  - label: 'Research summary (PDF)'
+    href: '/media/reports/unitree-g1-research-summary.pdf'
+    local: true
+---
+
+import Callout from '../../components/Callout.astro';
+import Figure from '../../components/Figure.astro';
+import ThroughputChart from '../../components/islands/ThroughputChart.tsx';
+import ScalingLadder from '../../components/islands/ScalingLadder.tsx';
+
+## The bottleneck
+
+GPU-parallel simulators like Isaac Lab are fast for one reason: every environment advances in
+lockstep and every quantity is a tensor with a leading batch dimension of *N*. Physics steps,
+observation assembly, reward computation, and the policy forward pass are all single batched
+operations over all *N* environments at once. Nothing in the hot loop is supposed to know that
+individual environments exist.
+
+The moment one term in that loop is computed per environment, the entire pipeline degrades to
+the speed of a Python `for` loop, and it does not matter how wide the batch is. Worse, it gets
+*slower* as you add environments, because you are adding iterations to a serial loop while the
+GPU sits idle waiting for work. Scaling up makes it worse, which is exactly the opposite of the
+signal you expect from a bottleneck and part of why this class of bug survives.
+
+The locomotion smoke test was managing about **275 steps per second**, and spending roughly
+**355 seconds collecting each iteration**. Nearly six minutes of wall-clock time to gather one
+iteration of rollouts is the number that actually conveys how bad it was.
+
+### Ruling out the obvious suspect first
+
+The run was emitting Vulkan warnings, which is exactly the kind of thing you want to blame.
+I didn't, and the reason is the piece of this I am most pleased with: the recovery experiment
+was throwing *the same* Vulkan warnings while running near 80,000 steps/s. If a warning is
+present in both the slow case and the fast case, it cannot be what distinguishes them. That
+one comparison cost nothing and saved me from a day of chasing graphics drivers.
+
+Ruling something out is not the same as knowing the answer, so I attached **`py-spy`** to the
+live process and sampled it. A sampling profiler on the running job is the right instrument
+here because the bug is not in code I would have thought to instrument — I needed to be told
+where the time was going, not to confirm a guess.
+
+### What the profile pointed at
+
+The time was in the critic's `rigid_body_materials` observation — a term exposing per-body
+physics material properties. Four things were wrong with it at once, which is why it was so
+expensive:
+
+- **Nested Python loops** over every environment *and* every rigid body, so the cost scaled as
+  the product of the two.
+- **Body-to-shape mappings rebuilt or re-validated on every call**, when they are fixed for the
+  lifetime of the simulation.
+- **The full PhysX material table queried repeatedly**, rather than once.
+- **Repeated CPU/GPU synchronisation**, which is the part that actually dominated. Every
+  synchronisation point is a hard stall where the GPU stops and waits for Python.
+
+The vectorised replacement addressed each: build the environment/body shape-index map **once**
+and keep the variant-aware map resident on the GPU; query the PhysX material table **once per
+observation step**; gather every material value with **a single tensor operation**; and delete
+the per-environment loops and the repeated synchronisation along with them.
+
+There was a second, smaller win in the same pass that I think shows better judgment than the
+first. The flat-terrain configuration was running a dense height scanner it did not need —
+on flat ground, base height is available directly in the world frame. So flat terrain now skips
+the scanner entirely, while rough terrain and any configuration that explicitly asks for
+exteroception still get it. The fastest version of an operation is the one you can prove you
+don't have to perform, but only if you scope the removal to the cases where that proof holds.
+
+<Figure caption="Simulation throughput before and after batching the offending critic observation term. Hover or scroll to draw." source="Source: docs/daily_logs/2026-08-03.md">
+  <div class="p-1">
+    <ThroughputChart client:visible />
+  </div>
+</Figure>
+
+Two readings were taken after the fix, at iterations 0 and 1 of the same 4,096-environment
+single-GPU smoke test: **25,155** and **28,712** steps per second. Against the ~275 baseline
+that is **91× and 104×** respectively — from a change confined to one observation term.
+
+Collection time is the more legible way to see it. The same iteration that had taken about
+**355 seconds** to collect now took **3.386 s** and then **2.902 s** — a **105× to 122×**
+reduction in the time to gather one iteration of experience.
+
+<Callout label="Being precise about this number" tone="caveat">
+  I quote ranges rather than single figures on purpose. My résumé says "&gt;100×", which holds
+  for the 28,712 steps/s reading and for both collection-time readings, but not for the 25,155
+  one — so the defensible statement is 91–104× on throughput and 105–122× on collection time.
+  All of these come from a **smoke test** at iterations 0 and 1 of a single run, not a sustained
+  average, so they establish that a serialisation bottleneck was removed rather than that the
+  pipeline holds 28,712 steps/s under load. For that, use the number below.
+</Callout>
+
+Under actual training conditions — 8,192 environments across two GPUs — the pipeline sustained
+**73,637 steps per second**, measured at iteration 2,789. That is the figure I would quote if
+someone asked how fast the pipeline actually runs.
+
+## What I take from finding it
+
+Two things, and I wrote both down in the log that day.
+
+The first is that **a performance warning is a hypothesis, not a diagnosis.** The Vulkan
+warnings were right there, plausible, and irrelevant. The only reason I didn't spend a day on
+them is that I checked whether they were also present in the fast run. That check generalises:
+before acting on a warning, find a case where the warning appears and the symptom doesn't.
+
+The second is that in a batched-by-construction system, the performance question is never
+"which operation is slow" — every operation is fast. The question is "which operation is
+secretly not batched," and the diagnostic signature is inverted from ordinary profiling
+intuition: cost scales with environment count while GPU utilisation stays low. One Python-loop
+observation path is enough to dominate an otherwise fully GPU-accelerated simulation.
+
+There is also a rendering counterpart to the same story. A MuJoCo visualisation pipeline was
+running at **138 FPS** because it had silently fallen back to CPU software rasterisation through
+llvmpipe. Pointing it at NVIDIA's EGL path took it to **1,812 FPS**. Different subsystem, same
+underlying failure mode — a component quietly running somewhere it was not supposed to, with no
+error, just a bad number.
+
+## Distributed PPO across two GPUs
+
+With single-GPU throughput fixed, the constraint moved to batch size. PPO's gradient estimates
+get less noisy with larger batches, and for a 29-degree-of-freedom humanoid the variance is
+substantial. But a batch large enough to help does not fit in memory.
+
+I extended the existing PPO implementation with **four-step gradient accumulation across two
+GPUs**, giving a **196,608-sample effective global batch**. Accumulation splits the update into
+micro-batches, running backward on each and summing gradients before stepping the optimiser, so
+the memory ceiling is set by the micro-batch while the statistical properties are set by the
+total.
+
+The arithmetic is worth spelling out, because the shape of it is the whole point:
+
+```text
+4,096 envs/GPU × 24 rollout steps  =  98,304 fresh samples per rank per iteration
+98,304 ÷ 4 mini-batches            =  24,576 samples per local mini-batch
+24,576 × 4 accumulation × 2 GPUs   = 196,608 samples per optimiser update
+5 PPO epochs                       =       5 optimiser updates per iteration
+```
+
+Implementation-wise: the loss is divided by the accumulation factor, gradients are zeroed at
+window boundaries, and clipping and the optimiser step happen only at the end of a window.
+Divisibility checks stop an accumulation window from straddling two PPO epochs, which would
+mix gradients from different data passes. It stays compatible with AMP and `GradScaler`, and
+it logs accumulation steps, optimiser steps, and effective batch to TensorBoard so the
+configuration is visible rather than assumed.
+
+One honest note on the design: it synchronises across ranks on **every micro-batch**, not once
+per optimiser step. Deferring the all-reduce to the end of the window would cut communication
+roughly fourfold, and that is the optimisation I would make next. Syncing every micro-batch
+keeps every rank's gradient identical at every point, which is the simpler thing to get right
+first.
+
+### The conceptual trap
+
+The mistake I had to think my way out of is that **effective batch size, fresh experience, and
+data diversity are three different quantities**, and gradient accumulation only moves one of
+them. Accumulating four micro-batches gives the optimiser a 196,608-sample gradient, but it is
+the *same* 196,608 samples the two ranks already collected — accumulation buys a lower-variance
+gradient estimate, not more data and not more diverse data. Running five PPO epochs over that
+same experience reuses it five times. Conflating those three is how people talk themselves into
+believing a larger effective batch has made their run more informative when it has only made it
+smoother.
+
+### The bugs that actually cost me time
+
+None of them were in the accumulation maths. They were all in the seams between components:
+
+- **The AMP discriminator was not distributed at all.** Auditing the recovery environment, I
+  found the adversarial-motion-prior discriminator's parameters, gradients, and observation
+  normalisers were evolving *independently on each rank*, and the per-rank variance pooling was
+  wrong. So the policy was being trained against two slightly different discriminators that
+  drifted further apart over time. Nothing crashed; the run just learned worse than it should
+  have. The fix was proper gradient averaging and globally pooled normaliser moments.
+- **A device-mapping bug of my own making.** My distributed launcher put Isaac on physical GPUs
+  2 and 3 while PPO and AMP ran on logical `cuda:0` and `cuda:1`. Those are different devices.
+  The ranks connected, then the run stalled inside NCCL with no error message. The fix was
+  threading `device_id` through consistently everywhere instead of letting two subsystems each
+  pick their own default.
+- **Infrastructure, repeatedly.** Fresh containers re-exposed the same class of problem each
+  time: per-rank motion-metadata paths, driver libraries that PhysX needs in order to use the
+  GPU at all, URDF importer settings. An earlier two-GPU attempt ran to completion having
+  silently fallen back to **software physics** — PyTorch reported CUDA available, which is not
+  the same as Isaac's PhysX using its GPU pipeline. I threw that run away.
+
+Because these are all silent failures, I wrote tests rather than trusting reward curves:
+**16 PPO-extension tests** and **8 matched-model tests** (accumulation factor 1 equivalence,
+factor 4 correctness, invalid factors rejected, optimiser step timing, distributed reduction,
+auxiliary losses, separate actor and critic learning rates, action-std bounds, quantiser
+gradients, observation dimensions, parameter counts), then **18 distributed regression tests**
+after the AMP audit (pooled global moments, AMP gradient averaging, PPO gradient reduction,
+normaliser broadcast, device propagation, privileged observation shapes, reward wiring).
+**42 tests in total**, which is where that number on my résumé comes from.
+
+## Scaling out
+
+The largest configuration I launched was **32,768 parallel environments across four GPUs**.
+
+<ScalingLadder client:visible />
+
+That run — 8,192 environments per GPU, a wider `[2048, 1024, 512]` network, targeting 200,000
+iterations — was healthy where I last checked it at iteration 2,240: explained variance 0.987,
+full 225-step episodes, about 11.8–12.0 GB of memory per GPU. I want to be precise about what
+that does and does not establish. It shows the distributed stack holds together at that scale
+and that memory headroom remained. It is **not** a policy-quality result; the run was still
+early and I never took it to a final evaluation.
+
+The more interesting number is where scaling actually stopped. Trying to run *locomotion* at
+16,384 environments ran out of memory on a 48 GB GPU during CUDA graph capture — the graph
+capture allocates for the whole batch up front, so this failed at setup rather than degrading
+gradually. That is a hardware ceiling, not a bug, and the honest response was to run the
+formal comparison at 8,192 instead of pretending the larger number was available. Recovery, a
+cheaper environment, did reach 32,768.
+
+## Fall recovery, and the video
+
+Beyond locomotion, I worked on getting a fallen G1 back on its feet. The approach used
+**adversarial motion priors** — an existing technique, not something I invented — trained
+against a dataset of **80 get-up motions totalling 55,488 frames**, so the policy is rewarded
+both for succeeding and for moving in a way that looks like the reference motions rather than
+exploiting the simulator.
+
+A completed 8,192-environment run — 4,096 environments per rank across two GPUs — reached
+**10,000 iterations in 7.59 hours** with an explained variance of **0.9946**, meaning the value
+function was tracking returns almost exactly. On a deterministic side-fall evaluation, pelvis
+height went from **0.34 m to 0.80 m in about three seconds**, and the policy then stayed
+standing for the rest of the clip.
+
+<Figure caption="A trained policy recovering from a fall to a standing pose in MuJoCo. 14 seconds, no cuts." source="Source: docs/reports/recovery/2026-08-14-g1-recovery-mujoco.mp4">
+  <video
+    class="mx-auto block w-full max-w-2xl"
+    src="/media/g1-recovery-mujoco.mp4"
+    width="960"
+    height="720"
+    controls
+    loop
+    muted
+    playsinline
+    preload="metadata"
+    aria-label="A Unitree G1 humanoid robot standing up after a fall, in the MuJoCo physics simulator."
+  ></video>
+</Figure>
+
+A locomotion checkpoint evaluated over **24 episodes** recorded **zero falls** and a velocity
+tracking error of **0.078 m/s**.
+
+<Callout label="Evaluation note" tone="caveat">
+  The randomised fall evaluation — the harder and more meaningful test than the deterministic
+  side-fall above — was never completed. Twenty-four episodes without a fall is a promising
+  checkpoint, not a reliability claim.
+</Callout>
+
+## What I got wrong
+
+The comparison I most wanted to work did not.
+
+I evaluated a quantised policy representation — **finite scalar quantisation**, again an
+existing technique — against a plain MLP baseline, expecting the discrete bottleneck to buy
+robustness to observation noise. It lost twice, on two independent tests.
+
+On **noise robustness**, across 5 motions × 4 noise levels × 3 seeds, the MLP won on both
+metrics: **98.33% success versus 96.67%**, and **37.06 mm versus 41.42 mm** mean per-joint
+position error. Lower is better on the second, so the quantised policy was both less reliable
+and less accurate — including at the high noise levels where it was supposed to have the edge.
+
+On **convergence**, in a matched training-budget comparison at iteration 7,500 of a
+4,096-environment run, the MLP led on reward (**26.26 versus 19.63**), on episode survival
+(**400.6 versus 388.3** steps), on every direct tracking error reported, and on termination
+robustness. The quantised policy narrowed some gaps but never overtook the baseline. My own
+report on that run is careful to add that both runs had reached a *practical* plateau rather
+than a proven one — the comparison is fair, not final.
+
+### The bug that was mine, and was not about quantisation at all
+
+Partway through, long runs of *both* architectures started losing reward after learning
+sensibly early on. My first instinct was that this was the quantised policy failing. It wasn't
+— the MLP baseline did it too, which immediately reframed the problem as PPO instability rather
+than an architecture result.
+
+What was happening: the Gaussian action standard deviation was initialised at 0.05 and had
+**grown to roughly 0.83** over training. Unconstrained exploration noise that large drives an
+action-rate penalty of about −1.5, so reward fell even though the policy had not forgotten how
+to stand. I had omitted the action-std clamp of `[0.001, 0.5]` that the reference method
+specifies. Adding it back fixed the trajectory.
+
+The detail I find most useful in hindsight is **why it took as long as it did to notice**.
+Episode lengths stayed high throughout. The policies were surviving, so every dashboard I
+looked at first said healthy — survival masked the fact that tracking accuracy and action
+quality were both degrading. As I put it in the log at the time, survival alone made the
+policies appear healthier than their tracking and action quality indicated. Since then I look
+at a quality metric next to every survival metric, because "it didn't fall over" is a very low
+bar that happens to be extremely visible.
+
+Fixing it too hard was its own lesson. Clamping the standard deviation *low* froze exploration
+near the initial value — approximate KL around 576 and a clip fraction of 0.61 at 5,000
+iterations, which is a diagnostic signature of a policy that cannot move. I stopped that run
+too and relaunched with a higher initial standard deviation and the clamp active.
+
+I could have quietly stopped reporting any of this. Instead it went into the logs and the
+reports exactly as measured, and it is on this page for the same reason: a negative result from
+a properly matched comparison is worth more than a positive result from a lucky one.
+
+### I labelled a result as something it wasn't
+
+The worst one. My first version of the structured policy was an encoder–latent–decoder actor
+with a **continuous** 256-dimensional latent — no quantiser in it anywhere. I built it, ran the
+comparison, and it beat the MLP baseline on reward and episode length. I wrote that up.
+
+The problem is that I had been calling the whole line of work by the name of the quantisation
+method, so a genuinely positive result about a *continuous* bottleneck was sitting in my notes
+labelled as evidence for a *discrete* one. They are different claims. Discreteness is the
+entire hypothesis; a continuous latent tests none of it.
+
+I caught this when I actually implemented the quantiser and had to name the two variants
+differently to tell them apart. Everything prior got relabelled "original MLP versus continuous
+SonicLite," and the quantised comparison started from zero. The relabelled result is still a
+real result — it just answers a question nobody was asking.
+
+What makes this worth publishing rather than burying is that nothing external would have caught
+it. The code ran, the numbers were real, the plots looked fine, and the label was wrong. The
+only defence is naming a variant after what it *contains* rather than after the paper it was
+inspired by, which is now how I name experiments.
+
+### The methodological mistake underneath all of them
+
+**Most of my earlier architecture experiments used a single seed — 42 — and were not
+parameter-matched.** The structured actor had **1,100,602 parameters against the MLP's
+837,690** — about 31% more capacity — so any win it posted had an obvious confound I had not
+controlled for. I ran them, looked at the curves, and formed opinions from them before noticing
+that capacity alone could explain everything I was seeing. The FSQ-versus-MLP comparison above
+is the one I trust, because it is the one where I fixed the methodology first: three seeds,
+matched models, a factorial sweep over noise levels. The earlier ones I now treat as
+exploration, not evidence.
+
+That experience is the direct reason parameter matching is enforced by the harness rather than
+left to discipline in the [benchmark infrastructure I now build at MIT CSAIL](/work/mit-csail).
+Building the check into the tooling is the only version that survives a deadline.
+
+## Reports
+
+These are the artifacts as they were produced during the internship, published with permission.
+
+- [Recovery training report](/media/reports/recovery-amp-8192env-10k-final.pdf) — the
+  8,192-environment run (4,096 per rank across 2 GPUs) logged through iteration 9,999, with
+  reward curves and a video contact sheet. Its executive assessment states plainly that the
+  result is evidence for the deterministic side-fall case only.
+- [MLP vs FSQ convergence](/media/reports/mlp-vs-fsq-convergence.pdf) — the matched
+  training-budget comparison at iteration 7,500 described above.
+- [Action-std collapse diagnosis](/media/reports/mlp-vs-sonic-collapse-diagnosis.pdf) — mean
+  episode reward and mean Gaussian action standard deviation over 16,000 iterations, plotted
+  against the reference implementation's clamp bounds.
+- [Experiment status](/media/reports/sonic-experiment-status.pdf) — a running snapshot of
+  configurations and where each stood.
+- [Research summary](/media/reports/unitree-g1-research-summary.pdf) — a one-page overview I
+  wrote at the end of the internship.
+
+<Callout label="Credit where it belongs">
+  I did not design PPO, adversarial motion priors, finite scalar quantisation, or the motion
+  imitation frameworks this work builds on. My contribution was integrating, extending,
+  profiling, debugging, and evaluating them inside a production training pipeline, and building
+  the test and evaluation infrastructure that made the results checkable.
+</Callout>
